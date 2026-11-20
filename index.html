@@ -79,7 +79,7 @@
 
         <div class="hero__date">
           <span class="script">بغداد. 11 آب 2004</span>
-          <small>مشروع: umine Studio</small>
+          <small>مشروع: Lumine Studio</small>
         </div>
 
         <div class="hero__title">
@@ -127,8 +127,8 @@
       <div class="profile__photo reveal" role="img" aria-label="صورة الملف الشخصي لـ Lumine">
         <img src="Gemini_Generated_Image_7yctx47yctx47yct.jpeg" alt="صورة الملف الشخصي لـ Lumine Studio"
           style="width: 100%; height: 100%; object-fit: cover;">
-        -->
       </div>
+      -->
       <span class="profile__cune cune" lang="sux" aria-hidden="true">𒀭𒈗𒀀𒂗</span>
       <div class="reveal">
         <p class="eyebrow">— 01 الملف الشخصي</p>
@@ -187,28 +187,6 @@
           <p>فضاءات معمارية سينمائية</p>
           <span class="arrow" aria-hidden="true">←</span>
         </li>
-        <li class="reveal">
-          <span class="idx" aria-hidden="true">03A</span><i class="lens" aria-hidden="true"></i>
-          <span class="year">2026</span>
-          <h3>
-            <button type="button" class="row__open" data-session="lighting" aria-haspopup="dialog">
-              <span class="row__label">معدات الإضاءة</span>
-            </button>
-          </h3>
-          <p>إضاءة الاستروب وإعدادات الإضاءة المستمرة</p>
-          <span class="arrow" aria-hidden="true">←</span>
-        </li>
-        <li class="reveal">
-          <span class="idx" aria-hidden="true">04A</span><i class="lens" aria-hidden="true"></i>
-          <span class="year">2026</span>
-          <h3>
-            <button type="button" class="row__open" data-session="cyc" aria-haspopup="dialog">
-              <span class="row__label">خلفيات السيكلوراما</span>
-            </button>
-          </h3>
-          <p>جدران سيكلوراما سلسة بلا حواف</p>
-          <span class="arrow" aria-hidden="true">←</span>
-        </li>
       </ul>
     </section>
 
@@ -262,8 +240,8 @@
       <div class="gallery__ui">
         <div class="gallery__bar" aria-hidden="true"><i></i></div>
         <div class="gallery__nav">
-          <button id="galPrev" aria-label="السابق">→</button>
-          <button id="galNext" aria-label="التالي">←</button>
+          <button type="button" id="galPrev" aria-label="السابق">→</button>
+          <button type="button" id="galNext" aria-label="التالي">←</button>
         </div>
       </div>
     </section>
@@ -309,6 +287,31 @@
     <p class="session__empty" id="sessionEmpty" hidden>لا توجد صور في هذه الجلسة بعد.</p>
   </div>
 
+  <!-- ITEM DETAIL OVERLAY -->
+  <div class="detail" id="itemDetail" role="dialog" aria-modal="true" aria-labelledby="detailTitle" hidden>
+    <div class="detail__bar">
+      <button type="button" class="session__back" id="detailBack"><span aria-hidden="true">→</span> رجوع</button>
+      <span class="session__badge" id="detailBadge" hidden>وضع المشرف</span>
+    </div>
+    <div class="detail__split">
+      <section class="detail__video" id="detailVideo" aria-label="الفيديو العمودي"></section>
+      <section class="detail__info" aria-label="تفاصيل العنصر">
+        <p class="eyebrow" id="detailTag"></p>
+        <h2 class="detail__title" id="detailTitle"></h2>
+        <p class="detail__note" id="detailNote"></p>
+        <div class="detail__notes" id="detailNotes"></div>
+        <div class="detail__tools" id="detailTools"></div>
+      </section>
+    </div>
+    <section class="detail__gallery" id="detailGallerySection" aria-labelledby="detailGalleryTitle">
+      <div class="detail__ghead">
+        <h3 class="detail__gtitle" id="detailGalleryTitle">معرض الصور</h3>
+        <div class="detail__gtools" id="detailGalleryTools"></div>
+      </div>
+      <div class="detail__strip" id="detailPhotoStrip" tabindex="0" aria-label="شريط الصور"></div>
+    </section>
+  </div>
+
   <!-- ADMIN LOGIN -->
   <dialog class="login" id="loginDlg" aria-labelledby="loginTitle">
     <form method="dialog" class="login__inner" id="loginForm">
@@ -323,67 +326,6 @@
   </dialog>
 
   <script src="main.js" defer></script>
-  <script>
-      (() => {
-        const track = document.querySelector('.gallery__track');
-        const cards = [...track.querySelectorAll('figure')];
-        const root = track.closest('section') || document;
-        const RTL = document.documentElement.dir === 'rtl', F = RTL ? -1 : 1; // F mirrors the carousel in RTL
-
-        // إذا أزرارك لها class أو id، غيّر هذي السطرين إليه، مثلاً '.gallery__btn--prev'
-        const PREV_SEL = null;
-        const NEXT_SEL = null;
-
-        const btns = [...root.querySelectorAll('button')].filter(b => !track.contains(b));
-        const strip = el => { const c = el.cloneNode(true); el.replaceWith(c); return c; }; // يشيل الكود القديم
-        const prev = strip(PREV_SEL ? root.querySelector(PREV_SEL) : btns[0]);
-        const next = strip(NEXT_SEL ? root.querySelector(NEXT_SEL) : btns[1]);
-
-        let cur = Math.floor(cards.length / 2);
-
-        function render() {
-          cards.forEach((c, i) => {
-            const d = i - cur, a = Math.abs(d), sign = Math.sign(d);
-            c.style.setProperty('--x', `${F * sign * (a ? 150 + (a - 1) * 55 : 0)}px`);
-            c.style.setProperty('--z', `${-a * 60}px`);
-            c.style.setProperty('--ry', `${-F * sign * Math.min(a, 1) * 8}deg`);
-            c.style.setProperty('--s', `${1 - Math.min(a, 4) * .08}`);
-            c.style.setProperty('--o', a > 4 ? 0 : 1 - a * .12);
-            c.style.setProperty('--b', 1 - Math.min(a, 4) * .15);
-            c.style.setProperty('--zi', 100 - a);
-            c.classList.toggle('is-active', a === 0);
-          });
-          prev.disabled = cur === 0;
-          next.disabled = cur === cards.length - 1;
-        }
-
-        const go = i => { cur = Math.max(0, Math.min(cards.length - 1, i)); render(); };
-
-        prev.addEventListener('click', () => go(cur - 1));
-        next.addEventListener('click', () => go(cur + 1));
-        cards.forEach((c, i) => c.addEventListener('click', () => { if (!moved) go(i); }));
-
-        // اللمس والسحب
-        let sx = 0, down = false, moved = false;
-        track.addEventListener('pointerdown', e => { down = true; moved = false; sx = e.clientX; });
-        window.addEventListener('pointermove', e => {
-          if (!down) return;
-          const dx = e.clientX - sx;
-          if (Math.abs(dx) > 50) { go(cur + (dx * F < 0 ? 1 : -1)); sx = e.clientX; moved = true; }
-        });
-        const end = () => { down = false; setTimeout(() => moved = false, 0); };
-        window.addEventListener('pointerup', end);
-        window.addEventListener('pointercancel', end);
-
-        document.addEventListener('keydown', e => {
-          if (e.key === 'ArrowLeft') go(cur - F);
-          if (e.key === 'ArrowRight') go(cur + F);
-        });
-
-        render();
-      })();
-
-  </script>
 </body>
 
 </html>
