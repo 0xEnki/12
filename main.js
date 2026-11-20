@@ -3,8 +3,8 @@
    The anon key is public by design; your data is protected by the
    Row Level Security policies in supabase-setup.sql, not by hiding it.
    ===================================================================== */
-const SUPABASE_URL = "https://YOUR-PROJECT-REF.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
+const SUPABASE_URL = "https://wwtnxvushnawzqxbrozk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_OusFS6Iy9z3sqktnzIecBA_N4aeGlCs";
 const SUPABASE_BUCKET = "lumine-media"; // public Storage bucket
 // ESM builds of @supabase/supabase-js (pinned). The second URL is only a fallback.
 const SUPABASE_JS_URLS = [
