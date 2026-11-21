@@ -196,60 +196,91 @@ const SUPABASE_JS_URLS = [
     });
   }
 
-  // Gallery: ONE 3D carousel (buttons, drag/swipe, keyboard) — no scrollLeft logic
+  // Gallery: INFINITE circular 3D carousel (buttons, drag/swipe, keyboard)
   const track = $(".gallery__track");
   if (track) {
     const cards = $$("figure", track);
-    const ui = $(".gallery__ui");
-    const prev = $("#galPrev"), next = $("#galNext");
-    const F = document.documentElement.dir === "rtl" ? -1 : 1; // mirrors the carousel in RTL
-    let cur = Math.floor(cards.length / 2);
-    let sx = 0, down = false, moved = false;
+    const total = cards.length;
+    if (total > 0) {
+      const ui = $(".gallery__ui");
+      const countEl = $(".count");
+      const prev = $("#galPrev"), next = $("#galNext");
+      const F = document.documentElement.dir === "rtl" ? -1 : 1; // mirrors the carousel in RTL
+      let cur = 0;
+      let sx = 0, down = false, moved = false;
 
-    const render = () => {
-      cards.forEach((c, i) => {
-        const d = i - cur, a = Math.abs(d), sign = Math.sign(d);
-        c.style.setProperty("--x", `${F * sign * (a ? 150 + (a - 1) * 55 : 0)}px`);
-        c.style.setProperty("--z", `${-a * 60}px`);
-        c.style.setProperty("--ry", `${-F * sign * Math.min(a, 1) * 8}deg`);
-        c.style.setProperty("--s", `${1 - Math.min(a, 4) * .08}`);
-        c.style.setProperty("--o", a > 4 ? 0 : 1 - a * .12);
-        c.style.setProperty("--b", 1 - Math.min(a, 4) * .15);
-        c.style.setProperty("--zi", 100 - a);
-        c.classList.toggle("is-active", a === 0);
+      const wrap = (i) => ((i % total) + total) % total;
+
+      const circularDiff = (index, active) => {
+        let diff = index - active;
+        const half = total / 2;
+        if (diff > half) diff -= total;
+        if (diff < -half) diff += total;
+        return diff;
+      };
+
+      const render = () => {
+        cards.forEach((c, i) => {
+          const d = circularDiff(i, cur);
+          const a = Math.abs(d), sign = Math.sign(d);
+
+          // Prevent card from flying across the screen when wrapping around edges
+          const prevD = Number(c.dataset.diff ?? d);
+          if (Math.abs(d - prevD) > 1.5) {
+            c.style.transition = "none";
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                c.style.transition = "";
+              });
+            });
+          }
+          c.dataset.diff = d;
+
+          c.style.setProperty("--x", `${F * sign * (a ? 150 + (a - 1) * 55 : 0)}px`);
+          c.style.setProperty("--z", `${-a * 60}px`);
+          c.style.setProperty("--ry", `${-F * sign * Math.min(a, 1) * 8}deg`);
+          c.style.setProperty("--s", `${1 - Math.min(a, 4) * .08}`);
+          c.style.setProperty("--o", a > 4 ? 0 : 1 - a * .12);
+          c.style.setProperty("--b", 1 - Math.min(a, 4) * .15);
+          c.style.setProperty("--zi", 100 - Math.round(a));
+          c.classList.toggle("is-active", d === 0);
+        });
+
+        if (prev) prev.disabled = total <= 1;
+        if (next) next.disabled = total <= 1;
+        if (countEl) countEl.textContent = `${cur + 1} / ${total}`;
+        if (ui) ui.style.setProperty("--g", total > 1 ? Math.max(.12, (cur + 1) / total) : 1);
+      };
+
+      const go = (i) => { cur = wrap(i); render(); };
+
+      prev?.addEventListener("click", () => go(cur - 1));
+      next?.addEventListener("click", () => go(cur + 1));
+      cards.forEach((c, i) => c.addEventListener("click", () => { if (!moved) go(i); }));
+
+      track.addEventListener("pointerdown", (e) => { down = true; moved = false; sx = e.clientX; });
+      addEventListener("pointermove", (e) => {
+        if (!down) return;
+        const dx = e.clientX - sx;
+        if (Math.abs(dx) > 50) { go(cur + (dx * F < 0 ? 1 : -1)); sx = e.clientX; moved = true; track.classList.add("is-drag"); }
       });
-      if (prev) prev.disabled = cur === 0;
-      if (next) next.disabled = cur === cards.length - 1;
-      if (ui) ui.style.setProperty("--g", cards.length > 1 ? Math.max(.12, (cur + 1) / cards.length) : 1);
-    };
-    const go = (i) => { cur = Math.max(0, Math.min(cards.length - 1, i)); render(); };
+      const end = () => { down = false; track.classList.remove("is-drag"); setTimeout(() => { moved = false; }, 0); };
+      addEventListener("pointerup", end);
+      addEventListener("pointercancel", end);
 
-    prev?.addEventListener("click", () => go(cur - 1));
-    next?.addEventListener("click", () => go(cur + 1));
-    cards.forEach((c, i) => c.addEventListener("click", () => { if (!moved) go(i); }));
+      // Arrow keys: only while the gallery is on screen, no overlay is open and nobody is typing
+      addEventListener("keydown", (e) => {
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+        if (document.body.classList.contains("session-open") || document.querySelector("dialog[open]")) return;
+        const t = e.target;
+        if (t instanceof HTMLElement && t.closest("input, textarea, select, video, [contenteditable]")) return;
+        const r = track.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > innerHeight) return;
+        go(cur + (e.key === "ArrowLeft" ? -F : F));
+      });
 
-    track.addEventListener("pointerdown", (e) => { down = true; moved = false; sx = e.clientX; });
-    addEventListener("pointermove", (e) => {
-      if (!down) return;
-      const dx = e.clientX - sx;
-      if (Math.abs(dx) > 50) { go(cur + (dx * F < 0 ? 1 : -1)); sx = e.clientX; moved = true; track.classList.add("is-drag"); }
-    });
-    const end = () => { down = false; track.classList.remove("is-drag"); setTimeout(() => { moved = false; }, 0); };
-    addEventListener("pointerup", end);
-    addEventListener("pointercancel", end);
-
-    // Arrow keys: only while the gallery is on screen, no overlay is open and nobody is typing
-    addEventListener("keydown", (e) => {
-      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-      if (document.body.classList.contains("session-open") || document.querySelector("dialog[open]")) return;
-      const t = e.target;
-      if (t instanceof HTMLElement && t.closest("input, textarea, select, video, [contenteditable]")) return;
-      const r = track.getBoundingClientRect();
-      if (r.bottom < 0 || r.top > innerHeight) return;
-      go(cur + (e.key === "ArrowLeft" ? -F : F));
-    });
-
-    render();
+      render();
+    }
   }
 })();
 
